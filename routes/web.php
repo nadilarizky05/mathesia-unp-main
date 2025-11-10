@@ -17,7 +17,7 @@ Route::get('/', function () {
     return Inertia::render('auth/login');
 })->name('home');
 
-Route::middleware(['auth', 'role:teacher,admin'])->group(function () {
+Route::middleware(['auth:web', 'role:teacher,admin'])->group(function () {
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
     });
@@ -25,7 +25,7 @@ Route::middleware(['auth', 'role:teacher,admin'])->group(function () {
     // Tambahkan semua route admin kamu di sini
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth:web', 'verified'])->group(function () {
     // Dashboard
     Route::get('/', [StudentProgressController::class, 'index'])->name('home');
 

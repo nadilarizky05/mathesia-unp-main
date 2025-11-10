@@ -15,7 +15,8 @@ class EnsureUserHasAdminAccess
             return $next($request);
         }
 
-        $user = $request->user();
+        // Use admin guard to check authentication
+        $user = $request->user('admin');
 
         // Jika belum login, arahkan ke halaman login Filament
         if (! $user) {

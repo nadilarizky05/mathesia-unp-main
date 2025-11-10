@@ -13,7 +13,7 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        $user = $request->user();
+        $user = $request->user('web');
 
         // Pastikan sudah login
         if (!$user) {

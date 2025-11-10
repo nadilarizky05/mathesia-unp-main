@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\AdminLogin;
 use App\Filament\Widgets\guidelineAdmin;
 use App\Filament\Widgets\ProgressPerTopicChart;
 use App\Http\Middleware\EnsureUserHasAdminAccess;
@@ -20,7 +21,6 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -29,7 +29,8 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(AdminLogin::class)
+            ->authGuard('admin')
             ->colors([
                 'primary' => Color::Lime,
             ])
@@ -43,7 +44,7 @@ class AdminPanelProvider extends PanelProvider
                 // Widgets\AccountWidget::class,
                 guidelineAdmin::class,
                 ProgressPerTopicChart::class,
-                
+
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -56,7 +57,7 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
                 EnsureUserHasAdminAccess::class,
-                
+
             ])
             ->authMiddleware([
                 Authenticate::class,

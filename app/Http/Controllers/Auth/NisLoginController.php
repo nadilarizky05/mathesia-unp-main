@@ -41,16 +41,19 @@ class NisLoginController extends Controller
             return back()->withErrors(['password' => 'Password salah.']);
         }
 
-        Auth::login($user, $request->boolean('remember'));
+        Auth::guard('web')->login($user, $request->boolean('remember'));
 
         $request->session()->regenerate();
 
-        // Redirect sesuai role
-        return redirect()->intended(
-            $user->role === 'admin'
-                ? '/admin'
-                : '/'
-        );
+        // Only students and teachers can login through this endpoint
+        // Admins should use /admin/login for the admin panel
+        if ($user->role === 'admin') {
+            Auth::guard('web')->logout();
+            return back()->withErrors(['nis' => 'Admin harus login melalui panel admin di /admin/login']);
+        }
+
+        // Redirect to dashboard for students and teachers
+        return redirect()->intended('/');
     }
 
     /**
@@ -58,7 +61,7 @@ class NisLoginController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
