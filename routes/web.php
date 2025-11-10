@@ -5,6 +5,7 @@ use App\Http\Controllers\StudentProgressController;
 use App\Http\Controllers\GameCodeController;
 use App\Http\Controllers\LearningVideoController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\ProfileUpdateController;
 use App\Http\Controllers\StudentAnswerController;
 use App\Http\Controllers\SubTopicController;
 use App\Http\Controllers\TeamsController;
@@ -69,6 +70,8 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
     Route::get('profile', function () {
         return Inertia::render('Profile/Index');
     })->name('profile');
+
+    Route::post('/profile/update', [ProfileUpdateController::class, 'update'])->name('profile.update');
 
     Route::get('/our-team', [TeamsController::class, 'index'])->name('team.index');
 Route::get('/our-team/{team:slug}', [TeamsController::class, 'show'])->name('team.show');
