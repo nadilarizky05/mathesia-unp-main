@@ -1,20 +1,20 @@
+import CanvasAnswer from '@/components/CanvasAnswer';
 import FinalTestInline from '@/components/FinalTestInline';
-import Swal from 'sweetalert2';
 import { Link, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import CanvasAnswer from '@/components/CanvasAnswer';
 import { motion } from 'framer-motion';
 import {
     CheckCircle,
     ChevronLeft,
     ChevronRight,
+    Home,
     Lock,
     Menu,
     X,
-    Home
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 interface MaterialSection {
     id: number;
@@ -68,7 +68,11 @@ interface Props {
 }
 
 // ✅ Komponen untuk Menampilkan Nilai & Feedback
-const GradingDisplay = ({ answer }: { answer: { score?: number | null; feedback?: string | null } }) => {
+const GradingDisplay = ({
+    answer,
+}: {
+    answer: { score?: number | null; feedback?: string | null };
+}) => {
     if (!answer.score && !answer.feedback) return null;
 
     const getScoreColor = (score: number) => {
@@ -87,14 +91,20 @@ const GradingDisplay = ({ answer }: { answer: { score?: number | null; feedback?
         >
             {answer.score !== null && answer.score !== undefined && (
                 <div className="mb-1">
-                    <span className="text-white"><strong>Nilai: </strong></span>
-                    <span className={getScoreColor(answer.score)}>{answer.score}/100</span>
+                    <span className="text-white">
+                        <strong>Nilai: </strong>
+                    </span>
+                    <span className={getScoreColor(answer.score)}>
+                        {answer.score}/100
+                    </span>
                 </div>
             )}
 
             {answer.feedback && (
                 <div>
-                    <span className="text-white"><strong>Feedback: </strong></span>
+                    <span className="text-white">
+                        <strong>Feedback: </strong>
+                    </span>
                     <span className="text-white">{answer.feedback}</span>
                 </div>
             )}
@@ -121,7 +131,17 @@ export default function Show() {
     const [isLoadingFinalTest, setIsLoadingFinalTest] = useState(false);
 
     const [studentAnswers, setStudentAnswers] = useState<
-        Record<string, { text?: string; file?: string | null; score?: number | null; feedback?: string | null; graded_at?: string | null; graded_by?: string | null }>
+        Record<
+            string,
+            {
+                text?: string;
+                file?: string | null;
+                score?: number | null;
+                feedback?: string | null;
+                graded_at?: string | null;
+                graded_by?: string | null;
+            }
+        >
     >({});
 
     // ✅ Load jawaban termasuk grading info
@@ -129,7 +149,14 @@ export default function Show() {
         if (answers) {
             const mapped: Record<
                 string,
-                { text?: string; file?: string | null; score?: number | null; feedback?: string | null; graded_at?: string | null; graded_by?: string | null }
+                {
+                    text?: string;
+                    file?: string | null;
+                    score?: number | null;
+                    feedback?: string | null;
+                    graded_at?: string | null;
+                    graded_by?: string | null;
+                }
             > = {};
             Object.entries(answers).forEach(([sectionId, ans]) => {
                 ans.forEach((a: StudentAnswer) => {
@@ -154,15 +181,18 @@ export default function Show() {
             if (activeSection === totalSections && !finalTestData) {
                 try {
                     // ✅ Gunakan GET untuk cek attempt tanpa membuat baru
-                    const res = await fetch(`/final-test/check/${material.id}`, {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
+                    const res = await fetch(
+                        `/final-test/check/${material.id}`,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
                         },
-                    });
+                    );
 
                     const data = await res.json();
-                    
+
                     // ✅ Hanya set finalTestData jika benar-benar sudah ada attempt
                     if (res.ok && data.hasAttempt && data.attempt) {
                         setFinalTestData(data);
@@ -185,37 +215,41 @@ export default function Show() {
     const handleStartFinalTest = async () => {
         // ✅ Cegah double click
         if (isLoadingFinalTest) return;
-        
+
         setIsLoadingFinalTest(true);
-        const loading = toast.loading("Memulai tes akhir...");
+        const loading = toast.loading('Memulai tes akhir...');
 
         try {
             const res = await fetch(`/final-test/start/${material.id}`, {
-                method: "POST",
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": (
-                        document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement
-                    )?.content || "",
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN':
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content || '',
                 },
             });
 
             const data = await res.json();
 
-            if (!res.ok) throw new Error(data.message || "Gagal memulai tes akhir");
+            if (!res.ok)
+                throw new Error(data.message || 'Gagal memulai tes akhir');
 
             setFinalTestData(data);
 
             if (data.attempt?.is_submitted) {
-                toast("Tes akhir ini sudah dikumpulkan sebelumnya.", {
-                    icon: "ℹ️",
+                toast('Tes akhir ini sudah dikumpulkan sebelumnya.', {
+                    icon: 'ℹ️',
                 });
             } else {
-                toast.success("✅ Tes akhir dimulai!");
+                toast.success('✅ Tes akhir dimulai!');
             }
         } catch (err: any) {
-            console.error("❌ Error memulai tes akhir:", err);
-            toast.error(err.message || "Gagal memulai tes akhir.");
+            console.error('❌ Error memulai tes akhir:', err);
+            toast.error(err.message || 'Gagal memulai tes akhir.');
         } finally {
             toast.dismiss(loading);
             setIsLoadingFinalTest(false);
@@ -223,7 +257,10 @@ export default function Show() {
     };
 
     // ✅ PERBAIKAN: Simpan progress dengan active_section yang benar
-    const saveProgress = async (completed: number[], currentSection?: number) => {
+    const saveProgress = async (
+        completed: number[],
+        currentSection?: number,
+    ) => {
         try {
             await axios.post(`/materials/${material.id}/progress`, {
                 active_section: currentSection ?? activeSection,
@@ -246,19 +283,23 @@ export default function Show() {
             : [...completedSections, activeSection];
 
         setCompletedSections(newCompleted);
-        
+
         // ✅ Tentukan section berikutnya
-        const nextSection = activeSection < totalSections ? activeSection + 1 : activeSection;
-        
+        const nextSection =
+            activeSection < totalSections ? activeSection + 1 : activeSection;
+
         // ✅ Simpan progress dengan section berikutnya
         await saveProgress(newCompleted, nextSection);
 
-        if (newCompleted.length === totalSections && completedSections.length < totalSections) {
+        if (
+            newCompleted.length === totalSections &&
+            completedSections.length < totalSections
+        ) {
             Swal.fire({
                 icon: 'success',
                 title: '🎉 Selamat!',
                 text: 'Kamu sudah menyelesaikan seluruh materi.',
-                confirmButtonColor: '#2f6a62'
+                confirmButtonColor: '#2f6a62',
             });
         }
 
@@ -297,22 +338,24 @@ export default function Show() {
     const sidebarSections = useMemo(() => {
         const list = [{ id: 1, name: 'Section 1 - Video' }];
         const titleCount: Record<string, number> = {};
-        
+
         sections.forEach((s, i) => {
             let displayName = s.title || `Section ${i + 2} - Materi`;
-            
+
             if (s.title) {
                 titleCount[s.title] = (titleCount[s.title] || 0) + 1;
                 if (titleCount[s.title] > 1) {
                     displayName = `${s.title} - Kegiatan ${titleCount[s.title]}`;
                 } else {
-                    const duplicates = sections.filter(sec => sec.title === s.title);
+                    const duplicates = sections.filter(
+                        (sec) => sec.title === s.title,
+                    );
                     if (duplicates.length > 1) {
                         displayName = `${s.title} - Kegiatan 1`;
                     }
                 }
             }
-            
+
             list.push({
                 id: i + 2,
                 name: displayName,
@@ -355,13 +398,13 @@ export default function Show() {
                     graded_by: res.data.data.graded_by ?? null,
                 },
             }));
-            
+
             Swal.fire({
                 icon: 'success',
                 title: 'Berhasil!',
                 text: 'Jawaban berhasil disimpan!',
                 timer: 2000,
-                showConfirmButton: false
+                showConfirmButton: false,
             });
         } catch (error) {
             console.error('Gagal menyimpan jawaban:', error);
@@ -369,7 +412,7 @@ export default function Show() {
                 icon: 'error',
                 title: 'Gagal!',
                 text: 'Gagal menyimpan jawaban',
-                confirmButtonColor: '#2f6a62'
+                confirmButtonColor: '#2f6a62',
             });
         }
     };
@@ -404,18 +447,26 @@ export default function Show() {
                     (f) =>
                         section[f.key as keyof MaterialSection] && (
                             <div key={f.key} className="mb-10">
-                                <div className="mb-4 inline-block rounded-2xl bg-gradient-to-r from-cyan-100 to-blue-100 px-6 py-2 shadow-sm border-2 border-black">
-                                    <h3 className="!mb-0 !text-lg font-bold text-gray-900" style={{ fontFamily: '"Comic Sans MS", "Comic Sans", cursive'}}>
+                                <div className="mb-4 inline-block rounded-2xl border-2 border-black bg-gradient-to-r from-cyan-100 to-blue-100 px-6 py-2 shadow-sm">
+                                    <h3
+                                        className="!mb-0 !text-lg font-bold text-gray-900"
+                                        style={{
+                                            fontFamily:
+                                                '"Comic Sans MS", "Comic Sans", cursive',
+                                        }}
+                                    >
                                         {f.label}
                                     </h3>
                                 </div>
-                                
+
                                 {/* Soal Content */}
                                 <div
-                                    className="prose prose-img:rounded-xl rich-content !text-gray-700 mb-3"
+                                    className="prose prose-img:rounded-xl rich-content mb-3 !text-gray-700"
                                     dangerouslySetInnerHTML={{
                                         __html: decodeHTML(
-                                            section[f.key as keyof MaterialSection] as string,
+                                            section[
+                                                f.key as keyof MaterialSection
+                                            ] as string,
                                         ),
                                     }}
                                 />
@@ -426,20 +477,36 @@ export default function Show() {
                                         {/* ✅ Display Grading (Nilai & Feedback) */}
                                         {(() => {
                                             const answerKey = `${section.id}_${f.key}`;
-                                            const currentAnswer = studentAnswers[answerKey];
-                                            
+                                            const currentAnswer =
+                                                studentAnswers[answerKey];
+
                                             if (!currentAnswer) return null;
-                                            
-                                            return <GradingDisplay answer={currentAnswer} />;
+
+                                            return (
+                                                <GradingDisplay
+                                                    answer={currentAnswer}
+                                                />
+                                            );
                                         })()}
                                         <CanvasAnswer
                                             sectionId={section.id}
                                             fieldKey={f.key}
                                             existingImageUrl={
-                                                studentAnswers[`${section.id}_${f.key}`]?.file || null
+                                                studentAnswers[
+                                                    `${section.id}_${f.key}`
+                                                ]?.file || null
                                             }
-                                            onSave={async (sectionId, field, imageFile) => {
-                                                await handleAnswerSubmit(sectionId, field, '', imageFile);
+                                            onSave={async (
+                                                sectionId,
+                                                field,
+                                                imageFile,
+                                            ) => {
+                                                await handleAnswerSubmit(
+                                                    sectionId,
+                                                    field,
+                                                    '',
+                                                    imageFile,
+                                                );
                                             }}
                                         />
                                     </>
@@ -453,7 +520,7 @@ export default function Show() {
 
     // ✅ Fungsi untuk mendapatkan judul section yang aktif
     const getActiveSectionTitle = () => {
-        const activeItem = sidebarSections.find(s => s.id === activeSection);
+        const activeItem = sidebarSections.find((s) => s.id === activeSection);
         return activeItem?.name || material.title;
     };
 
@@ -467,7 +534,10 @@ export default function Show() {
                         attempt={finalTestData.attempt}
                         onSubmitSuccess={() => {
                             const newCompleted = [
-                                ...new Set([...completedSections, totalSections]),
+                                ...new Set([
+                                    ...completedSections,
+                                    totalSections,
+                                ]),
                             ];
                             setCompletedSections(newCompleted);
                             saveProgress(newCompleted);
@@ -476,13 +546,13 @@ export default function Show() {
                                 icon: 'success',
                                 title: '🎉 Tes Akhir Selesai!',
                                 text: 'Progress 100%',
-                                confirmButtonColor: '#2f6a62'
+                                confirmButtonColor: '#2f6a62',
                             });
                         }}
                     />
                 );
             }
-            
+
             // ✅ Jika belum mulai, tampilkan tombol Mulai Tes Akhir
             return (
                 <div className="rounded-2xl bg-white p-8 text-center shadow-lg">
@@ -490,13 +560,13 @@ export default function Show() {
                         Tes Akhir
                     </h2>
                     <p className="mb-6 text-gray-600">
-                        Kamu telah menyelesaikan semua materi. Sekarang waktunya mengerjakan
-                        tes akhir!
+                        Kamu telah menyelesaikan semua materi. Sekarang waktunya
+                        mengerjakan tes akhir!
                     </p>
                     <button
                         onClick={handleStartFinalTest}
                         disabled={isLoadingFinalTest}
-                        className="rounded-xl bg-[rgb(47,106,98)] px-6 py-3 font-semibold text-white hover:bg-green-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="rounded-xl bg-[rgb(47,106,98)] px-6 py-3 font-semibold text-white transition-all hover:bg-green-900 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {isLoadingFinalTest ? 'Memuat...' : 'Mulai Tes Akhir'}
                     </button>
@@ -525,7 +595,9 @@ export default function Show() {
                             />
                         </div>
                     ) : (
-                        <p className="text-center text-gray-500">Video tidak tersedia</p>
+                        <p className="text-center text-gray-500">
+                            Video tidak tersedia
+                        </p>
                     )}
                 </motion.div>
             );
@@ -535,12 +607,29 @@ export default function Show() {
         return renderSectionContent(section);
     };
 
+    useEffect(() => {
+        if (studentProgress && studentProgress.active_section > totalSections) {
+            // Reset active_section ke totalSections (atau ke 1, sesuai kebutuhan)
+            setActiveSection(totalSections);
+
+            // Update ke backend juga agar database mengikuti
+            axios.post(`/materials/${material.id}/progress`, {
+                active_section: totalSections,
+                completed_section: studentProgress.completed_section ?? [],
+                is_completed: false,
+            });
+        }
+    }, [totalSections]);
+
     return (
-        <div className="flex min-h-screen bg-[#f8faf9]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <div
+            className="flex min-h-screen bg-[#f8faf9]"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
+        >
             {/* Mobile Menu Button */}
             <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="fixed left-4 top-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[rgb(47,106,98)] text-white shadow-lg md:hidden"
+                className="fixed top-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[rgb(47,106,98)] text-white shadow-lg md:hidden"
             >
                 <Menu className="h-6 w-6" />
             </button>
@@ -554,14 +643,12 @@ export default function Show() {
             )}
 
             {/* Sidebar */}
-            <aside className={`
-                fixed md:sticky top-0 z-50 h-screen w-72 bg-white shadow-xl
-                transition-transform duration-300 md:translate-x-0 flex flex-col
-                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-            `}>
+            <aside
+                className={`fixed top-0 z-50 flex h-screen w-72 flex-col bg-white shadow-xl transition-transform duration-300 md:sticky md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} `}
+            >
                 <button
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="absolute right-4 top-4 md:hidden"
+                    className="absolute top-4 right-4 md:hidden"
                 >
                     <X className="h-6 w-6 text-gray-600" />
                 </button>
@@ -578,8 +665,11 @@ export default function Show() {
                 <div className="px-6 pt-4">
                     <Link
                         href="/"
-                        className="flex items-center justify-center gap-2 rounded-xl bg-[rgb(47,106,98)] px-5 py-3 text-white hover:bg-[rgb(34,80,73)] transition-colors w-full shadow-sm"
-                        style={{ fontFamily: '"Comic Sans MS", "Comic Sans", cursive' }}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[rgb(47,106,98)] px-5 py-3 text-white shadow-sm transition-colors hover:bg-[rgb(34,80,73)]"
+                        style={{
+                            fontFamily:
+                                '"Comic Sans MS", "Comic Sans", cursive',
+                        }}
                     >
                         <Home className="h-5 w-5" />
                         Kembali ke Dashboard
@@ -594,8 +684,8 @@ export default function Show() {
                         />
                     </div>
                     <p className="text-start text-sm text-gray-600">
-                        Progress: {completedSections.length}/{totalSections}{' '}
-                        ({progressPercent}%)
+                        Progress: {completedSections.length}/{totalSections} (
+                        {progressPercent}%)
                     </p>
                 </div>
 
@@ -606,21 +696,27 @@ export default function Show() {
                     <ul className="flex flex-col gap-2">
                         {sidebarSections.map((section) => {
                             const locked = !canAccessSection(section.id);
-                            const completed = completedSections.includes(section.id);
+                            const completed = completedSections.includes(
+                                section.id,
+                            );
                             return (
                                 <li key={section.id}>
                                     <button
                                         disabled={locked}
-                                        onClick={() => handleSectionChange(section.id)}
+                                        onClick={() =>
+                                            handleSectionChange(section.id)
+                                        }
                                         className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-start transition ${
                                             activeSection === section.id
                                                 ? 'bg-black text-white'
                                                 : locked
-                                                ? 'cursor-not-allowed bg-gray-100 text-gray-400'
-                                                : 'border-gray-200 bg-white text-gray-700 hover:bg-[rgb(224,234,232)]'
+                                                  ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+                                                  : 'border-gray-200 bg-white text-gray-700 hover:bg-[rgb(224,234,232)]'
                                         }`}
                                     >
-                                        <span className="text-sm">{section.name}</span>
+                                        <span className="text-sm">
+                                            {section.name}
+                                        </span>
                                         {completed ? (
                                             <CheckCircle className="h-4 w-4 text-green-500" />
                                         ) : locked ? (
@@ -650,12 +746,14 @@ export default function Show() {
                         <button
                             onClick={goPrevious}
                             disabled={activeSection === 1}
-                            className="flex items-center gap-2 rounded-xl border bg-white px-5 py-2.5 text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 rounded-xl border bg-white px-5 py-2.5 text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             <ChevronLeft /> Previous
                         </button>
 
-                        {progressPercent === 100 && activeSection === totalSections && finalTestData?.attempt?.is_submitted ? (
+                        {progressPercent === 100 &&
+                        activeSection === totalSections &&
+                        finalTestData?.attempt?.is_submitted ? (
                             <Link
                                 href="/"
                                 className="flex items-center gap-2 rounded-xl bg-[rgb(47,106,98)] px-5 py-2.5 text-white hover:bg-green-900"
@@ -665,8 +763,11 @@ export default function Show() {
                         ) : activeSection === totalSections ? (
                             <button
                                 onClick={completeAndNext}
-                                disabled={!finalTestData || !finalTestData?.attempt?.is_submitted}
-                                className="flex items-center gap-2 rounded-xl bg-[rgb(47,106,98)] px-5 py-2.5 text-white hover:bg-[rgb(34,80,73)] disabled:opacity-40 disabled:cursor-not-allowed"
+                                disabled={
+                                    !finalTestData ||
+                                    !finalTestData?.attempt?.is_submitted
+                                }
+                                className="flex items-center gap-2 rounded-xl bg-[rgb(47,106,98)] px-5 py-2.5 text-white hover:bg-[rgb(34,80,73)] disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 Finish
                                 <ChevronRight />

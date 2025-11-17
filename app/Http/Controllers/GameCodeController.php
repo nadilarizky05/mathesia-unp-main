@@ -25,35 +25,38 @@ class GameCodeController extends Controller
         $user = Auth::user();
         $subtopic = SubTopic::with('materials')->findOrFail($subtopicId);
 
-        // Ambil game yang terkait dengan subtopic
-        $game = GameCode::where('sub_topic_id', $subtopicId)->first();
-
-        // Cek progress user
+        // Ambil progress user pada subtopik ini
         $progress = StudentProgress::where('user_id', $user->id)
             ->where('sub_topic_id', $subtopicId)
+            ->whereNotNull('game_code_id')
             ->first();
 
         if ($progress) {
-            if ($progress->is_completed && $subtopic->materials->isNotEmpty()) {
+
+            // Ambil materi berdasarkan game_code yang dipilih user
+            $material = Material::where('game_code_id', $progress->game_code_id)->first();
+
+            if ($progress->is_completed && $material) {
                 return redirect()
-                    ->route('materials.show', ['material' => $subtopic->materials->first()->id])
+                    ->route('materials.show', ['material' => $material->id])
                     ->with('info', 'Kamu sudah menyelesaikan game ini. Langsung ke materi.');
             }
 
-            if ($subtopic->materials->isNotEmpty()) {
+            if ($material) {
                 return redirect()
-                    ->route('materials.show', ['material' => $subtopic->materials->first()->id])
+                    ->route('materials.show', ['material' => $material->id])
                     ->with('info', 'Lanjutkan materi dari bagian terakhir.');
             }
         }
 
-        // ⬇️ Tambahkan game_url ke props
+        // User belum punya progress → tampilkan halaman game
         return inertia('Game/Play', [
             'subtopic' => $subtopic,
-            'game_url' => $game?->game_url, // gunakan null-safe operator
-            'level' => $game?->level,
+            'game_url' => null,
+            'level' => null,
         ]);
     }
+
 
 
 
@@ -84,42 +87,42 @@ class GameCodeController extends Controller
     }
 
     public function verifyAndAccess(Request $request, $subtopicId)
-{
-    $request->validate([
-        'access_code' => 'required|string|max:6',
-    ]);
+    {
+        $request->validate([
+            'access_code' => 'required|string|max:6',
+        ]);
 
-    $code = strtoupper($request->access_code);
+        $code = strtoupper($request->access_code);
 
-    $gameCode = GameCode::where('code', $code)
-        ->where('sub_topic_id', $subtopicId)
-        ->first();
+        $gameCode = GameCode::where('code', $code)
+            ->where('sub_topic_id', $subtopicId)
+            ->first();
 
-    if (!$gameCode) {
-        return back()->withErrors(['access_code' => 'Kode tidak valid atau tidak cocok dengan subtopik ini.']);
+        if (!$gameCode) {
+            return back()->withErrors(['access_code' => 'Kode tidak valid atau tidak cocok dengan subtopik ini.']);
+        }
+
+        $material = Material::where('game_code_id', $gameCode->id)->first();
+
+        if (!$material) {
+            return back()->withErrors(['access_code' => 'Belum ada materi yang terhubung dengan kode ini.']);
+        }
+
+        // ✅ Simpan progress tanpa duplikasi
+        $this->updateProgressOrCreate([
+            'user_id' => Auth::id(),
+            'sub_topic_id' => $subtopicId,
+            'game_code_id' => $gameCode->id,
+            'material_id' => $material->id,
+            'is_completed' => true,
+            'completed_at' => now(),
+            'level' => $gameCode->level
+        ]);
+
+        return redirect()
+            ->route('materials.show', ['material' => $material->id])
+            ->with('success', 'Kode berhasil diverifikasi! Kamu bisa mulai belajar.');
     }
-
-    $material = Material::where('game_code_id', $gameCode->id)->first();
-
-    if (!$material) {
-        return back()->withErrors(['access_code' => 'Belum ada materi yang terhubung dengan kode ini.']);
-    }
-
-    // ✅ Simpan progress tanpa duplikasi
-    $this->updateProgressOrCreate([
-        'user_id' => Auth::id(),
-        'sub_topic_id' => $subtopicId,
-        'game_code_id' => $gameCode->id,
-        'material_id' => $material->id,
-        'is_completed' => true,
-        'completed_at' => now(), 
-        'level' => $gameCode->level
-    ]);
-
-    return redirect()
-        ->route('materials.show', ['material' => $material->id])
-        ->with('success', 'Kode berhasil diverifikasi! Kamu bisa mulai belajar.');
-}
 
     public function getGameBySubtopic($subtopicId): JsonResponse
     {
@@ -189,59 +192,74 @@ class GameCodeController extends Controller
             ]
         ]);
     }
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function store(Request $request)
     {
-        //
-    }
+        $validated = $request->validate([
+            'sub_topic_id' => 'required|exists:sub_topics,id',
+            'code' => 'required|string|max:6|unique:game_codes,code',
+            'level' => 'required|in:inferior,reguler,superior',
+        ]);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreGameCodeRequest $request)
-    {
-        //
-    }
+        // 1. Simpan GameCode
+        $gameCode = GameCode::create([
+            'sub_topic_id' => $validated['sub_topic_id'],
+            'code' => strtoupper($validated['code']),
+            'level' => strtolower($validated['level']),
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(GameCode $gameCode)
-    {
-        //
-    }
+        // 2. Tentukan TITLE berdasarkan subtopic
+        $titles = [
+            1 => "Pola Bilangan",
+            2 => "Koordinat Kartesius",
+            3 => "Relasi Fungsi", 
+            4 => "Persamaan Garis",
+            5 => "SPLDV",
+            6 => "Pythagoras",
+            7 => "Lingkaran",
+            8 => "Garis Singgung Lingkarang",
+            9 => "Bangun Ruang Sisi Datar",
+            10 => "Bangun Ruang Sisi Lengkung",
+            // kalau nanti ada subtopic tambahan
+        ];
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(GameCode $gameCode)
-    {
-        //
-    }
+        $title = $titles[$validated['sub_topic_id']] . " (" . ucfirst($validated['level']) . ")";
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateGameCodeRequest $request, GameCode $gameCode)
-    {
-        //
-    }
+        // 3. Tentukan ORDER berdasarkan LEVEL
+        $order = match ($validated['level']) {
+            'inferior' => 1,
+            'reguler' => 2,
+            'superior' => 3,
+        };
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(GameCode $gameCode)
-    {
-        //
+        $videos = [
+            1 => 'https://www.youtube.com/embed/SIM-LFgrQus?si=OGyECtwdu8reiip5',
+            2 => 'https://www.youtube.com/embed/E2f95LsDSio?si=JWj7RaKKZMN_rTaF',
+            3 => 'https://www.youtube.com/embed/fsZj7CsZPRI?si=QuvKUeCgHjNK136f',
+            4 => 'https://www.youtube.com/embed/G9kp4yq92Xc?si=URzlgyNVm8M32emO',
+            5 => 'https://www.youtube.com/embed/B5PaFOJ8Png?si=dNXGUqPbkQy9yUuV',
+            6 => 'https://www.youtube.com/embed/NoLsDwkNbVs?si=ZaQWphQK7GY2D-6q',
+            7 => 'https://www.youtube.com/embed/_wjOho8khio?si=SmHk9CLBH27bRJL9',
+            8 => 'https://www.youtube.com/embed/mbqs4O538P8?si=qvFpvnQ_HQZXaeie',
+            9 => 'https://www.youtube.com/embed/IIB9rAOGmhY?si=rSoSz3QNFSsC5FLn',
+            10 => 'https://www.youtube.com/embed/VjvzF9gEgww?si=p4KiSh6vswSJI7IW',
+        ];
+
+        $videoUrl = $videos[$request->sub_topic_id] ?? null;
+
+        // 4. Buat MATERIAL otomatis
+        Material::create([
+            'sub_topic_id' => $validated['sub_topic_id'],
+            'title' => $title,
+            'level' => $validated['level'],
+            'content' => null,
+            'file_url' => null,
+            'video_url' => $videoUrl, // nanti bisa diisi otomatis juga
+            'order' => $order,
+            'game_code_id' => $gameCode->id,
+        ]);
+
+        return back()->with('success', 'Kode game berhasil disimpan sebagai data baru.');
+        
     }
 }

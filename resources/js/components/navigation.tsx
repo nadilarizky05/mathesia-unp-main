@@ -243,7 +243,10 @@ export default function Navigation() {
                         <div className="my-4 border-t border-gray-200" />
 
                         {/* User Section */}
-                        <div className="flex items-center gap-3 px-2">
+                        <Link
+                            href="/profile"
+                            className="flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-gray-100 active:bg-gray-200"
+                        >
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2f6a62] text-lg font-semibold text-white shadow">
                                 {getInitial(user.name)}
                             </div>
@@ -258,7 +261,7 @@ export default function Navigation() {
                                     </span>
                                 )}
                             </div>
-                        </div>
+                        </Link>
 
                         {/* Logout Button */}
                         <div className="mt-5 px-2">

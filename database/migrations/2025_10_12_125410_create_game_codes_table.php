@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('sub_topic_id')->constrained('sub_topics')->onDelete('cascade'); // Foreign key to sub_topics table
             $table->string('code')->unique(); // Unique game code
             $table->string('game_url')->nullable(); // Optional thumbnail for the sub-topic
-            $table->enum('level', ['inferior', 'reguler', 'Superior'])->default('inferior'); // Level of the game code
+            $table->enum('level', ['inferior', 'reguler', 'superior'])->default('inferior'); // Level of the game code
             $table->text('description')->nullable(); // Optional description for the game code
             $table->timestamps();
         });

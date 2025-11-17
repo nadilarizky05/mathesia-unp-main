@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Material;
 use App\Models\StudentProgress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,72 +10,51 @@ use Inertia\Inertia;
 class StudentProgressController extends Controller
 {
     /**
-     * Tampilkan semua progres user login di Home (Agregasi per SubTopic)
+     * Tampilkan progres user login di halaman Home (agregasi per SubTopic)
      */
     public function index()
     {
         $user = Auth::user();
 
-        // ✅ PERBAIKAN: Ambil progress dan hitung per subtopic
-        $rawProgress = StudentProgress::with(['subTopic.topic', 'gameCode', 'material'])
+        // Ambil progres, kumpulkan per subtopic, dan ambil progress tertinggi
+        $progress = StudentProgress::with(['subTopic.topic', 'gameCode', 'material'])
             ->where('user_id', $user->id)
-            ->get();
+            ->selectRaw('sub_topic_id, MAX(progress_percent) as progress_percent')
+            ->groupBy('sub_topic_id')
+            ->get()
+            ->map(function ($item) use ($user) {
 
-        // Group by sub_topic_id untuk menghitung progress per subtopic
-        $progressBySubtopic = [];
+                // Ambil record detail terbaru untuk subtopic itu
+                $latest = StudentProgress::with(['material', 'gameCode'])
+                    ->where('user_id', $user->id)
+                    ->where('sub_topic_id', $item->sub_topic_id)
+                    ->latest()
+                    ->first();
 
-        foreach ($rawProgress as $item) {
-            $subTopicId = $item->sub_topic_id;
-            
-            if (!isset($progressBySubtopic[$subTopicId])) {
-                $progressBySubtopic[$subTopicId] = [
+                return [
+                    'id' => $item->sub_topic_id,
                     'sub_topic' => [
-                        'id' => $item->subTopic->id,
-                        'title' => $item->subTopic->title,
+                        'id' => $latest->subTopic->id,
+                        'title' => $latest->subTopic->title,
+                        'topic' => $latest->subTopic->topic ? [
+                            'id' => $latest->subTopic->topic->id,
+                            'title' => $latest->subTopic->topic->title,
+                        ] : null,
                     ],
-                    'level' => $item->level,
-                    'game_code' => $item->gameCode ? [
-                        'id' => $item->gameCode->id,
-                        'code' => $item->gameCode->code,
+                    'material' => $latest->material ? [
+                        'id' => $latest->material->id,
+                        'title' => $latest->material->title,
                     ] : null,
-                    'total_sections' => 0,
-                    'completed_sections' => 0,
-                    'materials' => [],
+                    'game_code' => $latest->gameCode ? [
+                        'id' => $latest->gameCode->id,
+                        'code' => $latest->gameCode->code,
+                    ] : null,
+                    'level' => $latest->level ?? 'inferior',
+                    'progress_percent' => (int) $item->progress_percent,
+                    'is_completed' => (int) $item->progress_percent >= 100,
+                    'completed_at' => (int) $item->progress_percent >= 100 ? $latest->updated_at : null,
                 ];
-            }
-
-            // Hitung total sections untuk material ini
-            $material = $item->material;
-            if ($material) {
-                $totalSections = 1 + $material->sections()->count() + 1; // Video + Sections + Tes
-                $completedSections = count($item->completed_section ?? []);
-
-                $progressBySubtopic[$subTopicId]['total_sections'] += $totalSections;
-                $progressBySubtopic[$subTopicId]['completed_sections'] += $completedSections;
-                $progressBySubtopic[$subTopicId]['materials'][] = [
-                    'id' => $material->id,
-                    'title' => $material->title,
-                ];
-            }
-        }
-
-        // ✅ Format output untuk frontend dengan progress_percent yang benar
-        $progress = collect($progressBySubtopic)->map(function ($data) {
-            $progressPercent = $data['total_sections'] > 0
-                ? min(100, round(($data['completed_sections'] / $data['total_sections']) * 100))
-                : 0;
-
-            return [
-                'id' => $data['sub_topic']['id'],
-                'sub_topic' => $data['sub_topic'],
-                'material' => $data['materials'][0] ?? null, // Ambil material pertama untuk link
-                'game_code' => $data['game_code'],
-                'level' => $data['level'],
-                'progress_percent' => $progressPercent,
-                'is_completed' => $progressPercent === 100,
-                'completed_at' => null, // Bisa dihitung dari semua materials jika semua selesai
-            ];
-        })->values()->all();
+            });
 
         return Inertia::render('Home', [
             'studentProgress' => $progress,
@@ -84,7 +62,7 @@ class StudentProgressController extends Controller
     }
 
     /**
-     * Ambil progres berdasarkan subtopic
+     * Ambil progres user berdasarkan subtopic (untuk detail subtopic / lanjut belajar)
      */
     public function show($subtopicId)
     {
@@ -92,6 +70,7 @@ class StudentProgressController extends Controller
 
         $progress = StudentProgress::where('user_id', $user->id)
             ->where('sub_topic_id', $subtopicId)
+            ->orderBy('updated_at', 'desc')
             ->first();
 
         return response()->json([
@@ -101,12 +80,10 @@ class StudentProgressController extends Controller
     }
 
     /**
-     * ❌ DIHAPUS: Method ini tidak diperlukan lagi karena MaterialController sudah handle progress
-     * Jika masih digunakan, redirect ke MaterialController::updateProgress
+     * Store/update progress sebenarnya ditangani MaterialController, jadi tinggal redirect
      */
     public function storeOrUpdate(Request $request, $materialId)
     {
-        // Redirect ke MaterialController
         return app(MaterialController::class)->updateProgress($request, $materialId);
     }
 }

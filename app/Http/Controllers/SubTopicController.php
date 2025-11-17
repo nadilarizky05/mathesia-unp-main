@@ -25,51 +25,16 @@ class SubTopicController extends Controller
 
         // Proses setiap subtopic
         $subtopics = $subtopics->map(function ($subtopic) use ($user) {
-            // Cari material mana yang sedang dipelajari user untuk subtopic ini
-            $currentProgress = StudentProgress::where('user_id', $user->id)
-                ->whereHas('material', function ($query) use ($subtopic) {
-                    $query->where('sub_topic_id', $subtopic->id);
-                })
-                ->orderBy('updated_at', 'desc')
-                ->first();
 
-            // Tentukan level yang aktif (default: inferior jika belum ada progress)
-            $activeLevel = $currentProgress && $currentProgress->material 
-                ? $currentProgress->material->level 
-                : 'inferior';
-
-            // Ambil material sesuai level aktif
-            $material = Material::where('sub_topic_id', $subtopic->id)
-                ->where('level', $activeLevel)
-                ->first();
-
-            // Jika tidak ada material dengan level tersebut, ambil inferior
-            if (!$material) {
-                $material = Material::where('sub_topic_id', $subtopic->id)
-                    ->where('level', 'inferior')
-                    ->first();
-            }
-
-            // Hitung progress untuk material aktif ini
-            $progressPercent = 0;
-            if ($material) {
-                $totalSections = 1 + $material->sections()->count() + 1; // video + sections + tes akhir
-                
-                $progress = StudentProgress::where('user_id', $user->id)
-                    ->where('material_id', $material->id)
-                    ->first();
-
-                $completedSections = $progress ? count($progress->completed_section ?? []) : 0;
-                $progressPercent = $totalSections > 0
-                    ? min(100, round(($completedSections / $totalSections) * 100))
-                    : 0;
-            }
+            // Ambil progress tertinggi untuk subtopic ini
+            $progressPercent = StudentProgress::where('user_id', $user->id)
+                ->where('sub_topic_id', $subtopic->id)
+                ->max('progress_percent') ?? 0;
 
             return [
                 'id' => $subtopic->id,
                 'title' => $subtopic->title,
                 'description' => $subtopic->description ?? '',
-                'level' => $activeLevel,
                 'thumbnail' => $subtopic->thumbnail_url
                     ? asset('storage/' . ltrim(str_replace('storage/', '', $subtopic->thumbnail_url), '/'))
                     : null,
@@ -85,6 +50,7 @@ class SubTopicController extends Controller
             'subtopics' => $subtopics,
         ]);
     }
+
 
     /**
      * Ambil subtopik (versi JSON) berdasarkan topic_id.

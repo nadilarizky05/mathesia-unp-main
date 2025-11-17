@@ -18,6 +18,10 @@ Route::get('/', function () {
     return Inertia::render('auth/login');
 })->name('home');
 
+ Route::get('/games/line', function () {
+        return Inertia::render('games/LineJump');
+    })->name('line');
+
 Route::middleware(['auth:web', 'role:teacher,admin'])->group(function () {
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
@@ -40,6 +44,9 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
     Route::get('/subtopics/{subtopic}/game', [GameCodeController::class, 'play'])->name('game.play');
     Route::post('/subtopics/{subtopic}/verify', [GameCodeController::class, 'verify'])->name('game.verify');
     Route::post('/game/verify/{subtopic}', [GameCodeController::class, 'verifyAndAccess'])->name('game.verifyAndAccess');
+    Route::post('/game/store-code', [GameCodeController::class, 'store'])
+    ->middleware(['auth'])
+    ->name('game.store.code');
 
     // Materials
     Route::resource('materials', MaterialController::class)->only(['index', 'show']);
