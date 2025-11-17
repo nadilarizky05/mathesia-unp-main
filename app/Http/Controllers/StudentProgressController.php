@@ -6,6 +6,7 @@ use App\Models\Material;
 use App\Models\StudentProgress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Response;
 use Inertia\Inertia;
 
 class StudentProgressController extends Controller
@@ -108,5 +109,61 @@ class StudentProgressController extends Controller
     {
         // Redirect ke MaterialController
         return app(MaterialController::class)->updateProgress($request, $materialId);
+    }
+
+    public function export()
+    {
+        $fileName = 'student-progress-' . date('Y-m-d-His') . '.csv';
+        
+        // Query data dengan relasi
+        $data = StudentProgress::with(['user', 'subtopic', 'gameCode'])
+            ->orderBy('completed_at', 'desc')
+            ->get();
+        
+        // Buat header CSV
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+        
+        $callback = function() use ($data) {
+            $file = fopen('php://output', 'w');
+            
+            // BOM untuk UTF-8 agar Excel bisa baca karakter Indonesia
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Header kolom
+            fputcsv($file, [
+                'Nama Siswa',
+                'NIS',
+                'Kelas',
+                'Asal Sekolah',
+                'Subtopik',
+                'Level',
+                'Tanggal Selesai',
+                'Status'
+            ]);
+            
+            // Data rows
+            foreach ($data as $progress) {
+                fputcsv($file, [
+                    $progress->user->name ?? '-',
+                    $progress->user->nis ?? '-',
+                    $progress->user->class ?? '-',
+                    $progress->user->school ?? '-',
+                    $progress->subtopic->title ?? '-',
+                    ucfirst($progress->level),
+                    $progress->completed_at ? $progress->completed_at->format('d-m-Y H:i:s') : '-',
+                    $progress->is_completed ? 'Selesai' : 'Belum Selesai'
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return Response::stream($callback, 200, $headers);
     }
 }

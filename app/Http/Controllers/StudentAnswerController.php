@@ -7,6 +7,7 @@ use App\Http\Requests\StoreStudentAnswerRequest;
 use App\Http\Requests\UpdateStudentAnswerRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Response;
 
 class StudentAnswerController extends Controller
 {
@@ -91,5 +92,80 @@ class StudentAnswerController extends Controller
     public function destroy(StudentAnswer $studentAnswer)
     {
         //
+    }
+
+    /**
+     * Export student answers to CSV
+     */
+    public function export()
+    {
+        $user = Auth::user();
+        $fileName = 'kumpulan-jawaban-siswa-' . date('Y-m-d-His') . '.csv';
+        
+        // Query data dengan relasi dan filter berdasarkan role
+        $query = StudentAnswer::with(['user', 'section.material']);
+        
+        // ✅ Filter untuk teacher: hanya siswa dari sekolah yang sama
+        if ($user->role === 'teacher') {
+            $query->whereHas('user', function ($q) use ($user) {
+                $q->where('school', $user->school);
+            });
+        }
+        
+        $data = $query->orderBy('created_at', 'desc')->get();
+        
+        // Buat header CSV
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+        
+        $callback = function() use ($data) {
+            $file = fopen('php://output', 'w');
+            
+            // BOM untuk UTF-8 agar Excel bisa baca karakter Indonesia
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Header kolom
+            fputcsv($file, [
+                'Nama Siswa',
+                'NIS',
+                'Kelas',
+                'Asal Sekolah',
+                'Section Materi',
+                'Nama Materi',
+                'Field Nama',
+                'Jawaban Text',
+                'File Jawaban',
+                'Nilai',
+                'Tanggal Dibuat',
+                'Tanggal Update'
+            ]);
+            
+            // Data rows
+            foreach ($data as $answer) {
+                fputcsv($file, [
+                    $answer->user->name ?? '-',
+                    $answer->user->nis ?? '-',
+                    $answer->user->class ?? '-',
+                    $answer->user->school ?? '-',
+                    $answer->section->title ?? '-',
+                    $answer->section->material->title ?? '-',
+                    $answer->field_name ?? '-',
+                    $answer->answer_text ?? '-',
+                    $answer->answer_file ? 'Ada File' : 'Tidak Ada',
+                    $answer->score ?? 'Belum Dinilai',
+                    $answer->created_at ? $answer->created_at->format('d-m-Y H:i:s') : '-',
+                    $answer->updated_at ? $answer->updated_at->format('d-m-Y H:i:s') : '-'
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return Response::stream($callback, 200, $headers);
     }
 }

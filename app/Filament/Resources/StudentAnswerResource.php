@@ -100,17 +100,23 @@ class StudentAnswerResource extends Resource
                     ->label('Nama Siswa')
                     ->searchable()
                     ->sortable(),
-                
+
+                Tables\Columns\TextColumn::make('user.class')
+                    ->label('Kelas')
+                    ->searchable()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('section.title')
                     ->label('Section Materi')
                     ->searchable()
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('field_name')
-                    ->label('Field Nama')
+                    ->label('Field Name')
                     ->searchable()
                     ->badge()
-                    ->color('info'),
+                    ->color('info')
+                    ->formatStateUsing(fn ($state) => self::getFieldLabel($state)),
                 
                 Tables\Columns\TextColumn::make('score')
                     ->label('Nilai')
@@ -150,13 +156,14 @@ class StudentAnswerResource extends Resource
                     ->searchable()
                     ->preload(),
                 
+                Tables\Filters\Filter::make('ungraded')
+                    ->label('Belum Dinilai')
+                    ->query(fn (Builder $query): Builder => $query->whereNull('score'))
+                    ->default(),
+                
                 Tables\Filters\Filter::make('graded')
                     ->label('Sudah Dinilai')
                     ->query(fn (Builder $query): Builder => $query->whereNotNull('score')),
-                
-                Tables\Filters\Filter::make('ungraded')
-                    ->label('Belum Dinilai')
-                    ->query(fn (Builder $query): Builder => $query->whereNull('score')),
             ])
             ->actions([
                 Tables\Actions\Action::make('grade')
@@ -164,6 +171,7 @@ class StudentAnswerResource extends Resource
                     ->icon('heroicon-o-pencil-square')
                     ->color('warning')
                     ->button()
+                    ->visible(fn ($record) => $record->score === null)
                     ->modalHeading('Beri Nilai - Preview File Jawaban')
                     ->modalContent(fn (StudentAnswer $record) => view('filament.modals.grade-answer', [
                         'record' => $record,
@@ -218,6 +226,52 @@ class StudentAnswerResource extends Resource
                     ->modalCancelActionLabel('Batal'),
                 
                 Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('edit_grade')
+                        ->label('Edit Nilai')
+                        ->icon('heroicon-o-pencil')
+                        ->color('info')
+                        ->visible(fn ($record) => $record->score !== null)
+                        ->modalHeading('Edit Nilai')
+                        ->modalWidth('3xl')
+                        ->form([
+                            Forms\Components\Grid::make(2)
+                                ->schema([
+                                    TextInput::make('score')
+                                        ->label('Nilai')
+                                        ->numeric()
+                                        ->minValue(0)
+                                        ->maxValue(100)
+                                        ->suffix('/ 100')
+                                        ->required()
+                                        ->default(fn ($record) => $record->score),
+                                    
+                                    TextInput::make('graded_by')
+                                        ->label('Dinilai oleh')
+                                        ->default(Auth::user()->name)
+                                        ->disabled()
+                                        ->dehydrated(false),
+                                ]),
+                            
+                            Textarea::make('feedback')
+                                ->label('Feedback untuk Siswa')
+                                ->rows(4)
+                                ->default(fn ($record) => $record->feedback)
+                                ->columnSpanFull(),
+                        ])
+                        ->action(function (StudentAnswer $record, array $data): void {
+                            $record->update([
+                                'score' => $data['score'],
+                                'feedback' => $data['feedback'] ?? null,
+                                'graded_by' => Auth::id(),
+                                'graded_at' => now(),
+                            ]);
+                            
+                            \Filament\Notifications\Notification::make()
+                                ->title('Nilai Berhasil Diupdate')
+                                ->success()
+                                ->send();
+                        }),
+                    
                     Tables\Actions\ViewAction::make()
                         ->modalWidth('5xl'),
                     
@@ -236,7 +290,37 @@ class StudentAnswerResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('download_excel')
+                    ->label('Download Excel')
+                    ->color('success')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->url(fn () => route('student-answers.export'))
+                    ->openUrlInNewTab(false),
+            ])
+            ->emptyStateHeading('Belum Ada Jawaban Siswa')
+            ->emptyStateDescription('Jawaban siswa akan muncul di sini setelah mereka submit.')
+            ->emptyStateIcon('heroicon-o-document-text');
+    }
+
+    /**
+     * Convert field_name to human readable label
+     */
+    protected static function getFieldLabel(string $fieldName): string
+    {
+        $labels = [
+            'masalah' => '🎯 Masalah',
+            'berpikir_soal_1' => '💭 Berpikir Soal 1',
+            'berpikir_soal_2' => '💭 Berpikir Soal 2',
+            'rencanakan' => '📋 Rencanakan',
+            'selesaikan' => '✅ Selesaikan',
+            'periksa' => '🔍 Periksa',
+            'kerjakan_1' => '✏️ Kerjakan 1',
+            'kerjakan_2' => '✏️ Kerjakan 2',
+        ];
+
+        return $labels[$fieldName] ?? ucfirst(str_replace('_', ' ', $fieldName));
     }
 
     /**
@@ -252,7 +336,6 @@ class StudentAnswerResource extends Resource
             $section = $record->section;
             $fieldName = $record->field_name;
 
-            // Mapping field_name ke kolom di material_sections
             $fieldMapping = [
                 'masalah' => 'masalah',
                 'berpikir_soal_1' => 'berpikir_soal_1',
@@ -264,7 +347,6 @@ class StudentAnswerResource extends Resource
                 'kerjakan_2' => 'kerjakan_2',
             ];
 
-            // Cek apakah field_name ada di mapping
             if (!isset($fieldMapping[$fieldName])) {
                 return 'Tipe soal "' . $fieldName . '" tidak dikenali';
             }
@@ -276,14 +358,11 @@ class StudentAnswerResource extends Resource
                 return 'Pertanyaan untuk field "' . $fieldName . '" kosong';
             }
 
-            // Cek apakah ini adalah path gambar simple
             if (self::isSimpleImagePath($questionValue)) {
-                return null; // Jika gambar simple, return null untuk text
+                return null;
             }
 
-            // Jika ada HTML, bersihkan image tags tapi keep text
             if (self::containsHtml($questionValue)) {
-                // Remove figure/img tags dari Trix editor
                 $cleanText = preg_replace('/<figure[^>]*>.*?<\/figure>/is', '', $questionValue);
                 $cleanText = strip_tags($cleanText);
                 $cleanText = trim($cleanText);
@@ -291,7 +370,6 @@ class StudentAnswerResource extends Resource
                 return $cleanText ?: null;
             }
 
-            // Bersihkan HTML tags jika ada
             $questionText = strip_tags($questionValue);
             return trim($questionText) ?: null;
 
@@ -313,7 +391,6 @@ class StudentAnswerResource extends Resource
             $section = $record->section;
             $fieldName = $record->field_name;
 
-            // Mapping field_name ke kolom
             $fieldMapping = [
                 'masalah' => 'masalah',
                 'berpikir_soal_1' => 'berpikir_soal_1',
@@ -336,12 +413,10 @@ class StudentAnswerResource extends Resource
                 return null;
             }
 
-            // 1. Cek apakah ini HTML dari Trix Editor (ada data-trix-attachment)
             if (str_contains($questionValue, 'data-trix-attachment')) {
                 return self::extractTrixImageUrl($questionValue);
             }
 
-            // 2. Cek apakah ini adalah path gambar simple
             if (self::isSimpleImagePath($questionValue)) {
                 return self::buildImageUrl($questionValue);
             }
@@ -357,12 +432,8 @@ class StudentAnswerResource extends Resource
         }
     }
 
-    /**
-     * Extract image URL from Trix editor HTML
-     */
     protected static function extractTrixImageUrl(string $html): ?string
     {
-        // Extract JSON dari data-trix-attachment attribute
         if (preg_match('/data-trix-attachment="([^"]+)"/', $html, $matches)) {
             $jsonString = html_entity_decode($matches[1]);
             $data = json_decode($jsonString, true);
@@ -370,9 +441,7 @@ class StudentAnswerResource extends Resource
             if (isset($data['url'])) {
                 $url = $data['url'];
                 
-                // Convert localhost URL to relative path jika perlu
                 if (str_contains($url, 'gm-lms-main.test') || str_contains($url, 'localhost')) {
-                    // Extract path after /storage/
                     if (preg_match('/\/storage\/(.+)$/', $url, $pathMatches)) {
                         return asset('storage/' . $pathMatches[1]);
                     }
@@ -382,7 +451,6 @@ class StudentAnswerResource extends Resource
             }
         }
         
-        // Fallback: cari img src
         if (preg_match('/<img[^>]+src="([^"]+)"/', $html, $matches)) {
             $url = $matches[1];
             
@@ -398,27 +466,20 @@ class StudentAnswerResource extends Resource
         return null;
     }
 
-    /**
-     * Build image URL from path
-     */
     protected static function buildImageUrl(string $path): string
     {
-        // Cek apakah sudah full URL
         if (filter_var($path, FILTER_VALIDATE_URL)) {
             return $path;
         }
         
-        // Jika sudah ada 'storage/' di awal
         if (str_starts_with($path, 'storage/') || str_starts_with($path, 'public/')) {
             return asset($path);
         }
         
-        // Jika ada folder/subfolder
         if (str_contains($path, '/')) {
             return asset('storage/' . $path);
         }
         
-        // Jika hanya nama file, coba beberapa path
         $possiblePaths = [
             'materials/sections/' . $path,
             'materials/' . $path,
@@ -436,17 +497,12 @@ class StudentAnswerResource extends Resource
         return asset('storage/' . $possiblePaths[0]);
     }
 
-    /**
-     * Cek apakah string adalah path gambar simple (bukan HTML)
-     */
     protected static function isSimpleImagePath(string $value): bool
     {
-        // Jika mengandung HTML tags, bukan simple path
         if (self::containsHtml($value)) {
             return false;
         }
 
-        // Cek ekstensi file gambar
         $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
         $extension = strtolower(pathinfo($value, PATHINFO_EXTENSION));
         
@@ -454,12 +510,10 @@ class StudentAnswerResource extends Resource
             return true;
         }
 
-        // Cek pattern ekstensi
         if (preg_match('/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i', $value)) {
             return true;
         }
 
-        // Jika text pendek dan ada path separator
         if (strlen($value) < 200 && (str_contains($value, '/') || str_contains($value, '\\'))) {
             return true;
         }
@@ -467,9 +521,6 @@ class StudentAnswerResource extends Resource
         return false;
     }
 
-    /**
-     * Cek apakah string mengandung HTML
-     */
     protected static function containsHtml(string $value): bool
     {
         return preg_match('/<[^>]+>/', $value) === 1;
@@ -491,7 +542,6 @@ class StudentAnswerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        // Hitung jawaban yang belum dinilai
         return static::getModel()::whereNull('score')->count() ?: null;
     }
 
@@ -499,5 +549,10 @@ class StudentAnswerResource extends Resource
     {
         $ungraded = static::getModel()::whereNull('score')->count();
         return $ungraded > 0 ? 'warning' : 'success';
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->role === 'admin';
     }
 }

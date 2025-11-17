@@ -189,7 +189,7 @@ export default function ProfilePage() {
                             onClick={() => {
                                 setUpdateProfilModal({ open: true, user });
                             }}
-                            className="flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-white transition hover:bg-blue-600"
+                            className="flex items-center gap-2 rounded-xl bg-[rgb(47,106,98)] px-5 py-2.5 text-white hover:bg-green-900"
                         >
                             <PenBox size={18} />
                             <span>Edit Profil</span>
@@ -447,7 +447,7 @@ export default function ProfilePage() {
                                                     !confirmMatch) ||
                                                 passwordStrength === 'weak'
                                             }
-                                            className="mt-2 w-full rounded-lg bg-blue-600 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+                                            className="mt-2 w-full rounded-lg   bg-[rgb(47,106,98)] hover:bg-green-900 py-2 text-white transition disabled:cursor-not-allowed disabled:bg-gray-400"
                                         >
                                             Simpan Perubahan
                                         </button>

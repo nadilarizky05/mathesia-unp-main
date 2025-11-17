@@ -41,6 +41,8 @@ class UserSeeder extends Seeder
             'email' => 'student@lms.com',
             'password' => Hash::make('STD001'),
             'role' => User::ROLE_STUDENT,
+            'class' => '10',
+            'school' => 'SMAN 1 Jakarta',
             'email_verified_at' => now(),
         ]);
 
@@ -136,12 +138,23 @@ class UserSeeder extends Seeder
         ]);
 
         // ====== 10 Student Users (ROLE_STUDENT) ======
+        $classes = ['10', '11', '12'];
+        $schools = [
+            'SMAN 1 Jakarta',
+            'SMAN 2 Bandung',
+            'SMAN 3 Surabaya',
+            'SMAN 4 Medan',
+            'SMAN 5 Semarang',
+        ];
+
         User::create([
             'nis' => '200001',
             'name' => 'mahasiswa01',
             'email' => 'mahasiswa01@lms.com',
             'password' => Hash::make('200001'),
             'role' => User::ROLE_STUDENT,
+            'class' => '10',
+            'school' => $schools[0],
             'email_verified_at' => now(),
         ]);
 
@@ -151,6 +164,8 @@ class UserSeeder extends Seeder
             'email' => 'mahasiswa02@lms.com',
             'password' => Hash::make('200002'),
             'role' => User::ROLE_STUDENT,
+            'class' => '11',
+            'school' => $schools[1],
             'email_verified_at' => now(),
         ]);
 
@@ -160,6 +175,8 @@ class UserSeeder extends Seeder
             'email' => 'mahasiswa03@lms.com',
             'password' => Hash::make('200003'),
             'role' => User::ROLE_STUDENT,
+            'class' => '12',
+            'school' => $schools[2],
             'email_verified_at' => now(),
         ]);
 
@@ -169,6 +186,8 @@ class UserSeeder extends Seeder
             'email' => 'mahasiswa04@lms.com',
             'password' => Hash::make('200004'),
             'role' => User::ROLE_STUDENT,
+            'class' => '10',
+            'school' => $schools[3],
             'email_verified_at' => now(),
         ]);
 
@@ -178,6 +197,8 @@ class UserSeeder extends Seeder
             'email' => 'mahasiswa05@lms.com',
             'password' => Hash::make('200005'),
             'role' => User::ROLE_STUDENT,
+            'class' => '11',
+            'school' => $schools[4],
             'email_verified_at' => now(),
         ]);
 
@@ -187,6 +208,8 @@ class UserSeeder extends Seeder
             'email' => 'mahasiswa06@lms.com',
             'password' => Hash::make('200006'),
             'role' => User::ROLE_STUDENT,
+            'class' => '12',
+            'school' => $schools[0],
             'email_verified_at' => now(),
         ]);
 
@@ -196,6 +219,8 @@ class UserSeeder extends Seeder
             'email' => 'mahasiswa07@lms.com',
             'password' => Hash::make('200007'),
             'role' => User::ROLE_STUDENT,
+            'class' => '10',
+            'school' => $schools[1],
             'email_verified_at' => now(),
         ]);
 
@@ -205,6 +230,8 @@ class UserSeeder extends Seeder
             'email' => 'mahasiswa08@lms.com',
             'password' => Hash::make('200008'),
             'role' => User::ROLE_STUDENT,
+            'class' => '11',
+            'school' => $schools[2],
             'email_verified_at' => now(),
         ]);
 
@@ -214,6 +241,8 @@ class UserSeeder extends Seeder
             'email' => 'mahasiswa09@lms.com',
             'password' => Hash::make('200009'),
             'role' => User::ROLE_STUDENT,
+            'class' => '12',
+            'school' => $schools[3],
             'email_verified_at' => now(),
         ]);
 
@@ -223,6 +252,8 @@ class UserSeeder extends Seeder
             'email' => 'mahasiswa10@lms.com',
             'password' => Hash::make('200010'),
             'role' => User::ROLE_STUDENT,
+            'class' => '10',
+            'school' => $schools[4],
             'email_verified_at' => now(),
         ]);
     }

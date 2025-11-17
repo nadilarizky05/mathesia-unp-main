@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->nullable()->unique(); // Email opsional
             $table->string('password');
+            $table->string('class')->nullable(); // Tingkat Kelas (10, 11, 12)
+            $table->string('school')->nullable(); // Alamat Sekolah
             $table->enum('role', ['student', 'teacher', 'admin'])->default('student'); // Role user
             $table->timestamp('email_verified_at')->nullable();
             

@@ -29,6 +29,11 @@ Route::middleware(['auth:web', 'role:teacher,admin'])->group(function () {
 Route::middleware(['auth:web', 'verified'])->group(function () {
     // Dashboard
     Route::get('/', [StudentProgressController::class, 'index'])->name('home');
+    Route::get('/student-progress/export', [StudentProgressController::class, 'export'])
+    ->name('student-progress.export');
+
+    Route::get('/student-answers/export', [StudentAnswerController::class, 'export'])
+    ->name('student-answers.export');
 
     // Topics
     Route::get('/topics', [TopicController::class, 'index'])->name('topics.index');

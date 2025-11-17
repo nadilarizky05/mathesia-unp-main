@@ -45,6 +45,67 @@ export default function Navigation() {
     const handleLogout = () => router.post('/logout');
     const getInitial = (name: string) => name.charAt(0).toUpperCase();
 
+    // Menu items dengan icon
+    const menuItems = [
+        {
+            path: '/topics',
+            label: 'Learning Material',
+            icon: (
+                <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                    />
+                </svg>
+            ),
+        },
+        {
+            path: '/tka',
+            label: 'TKA',
+            icon: (
+                <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                    />
+                </svg>
+            ),
+        },
+        {
+            path: '/our-team',
+            label: 'Our Team',
+            icon: (
+                <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                </svg>
+            ),
+        },
+    ];
+
     return (
         <nav id="nav-auth" className="sticky top-0 z-50 bg-white shadow-sm">
             <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
@@ -61,24 +122,17 @@ export default function Navigation() {
 
                         {/* Desktop Menu */}
                         <ul className="hidden items-center gap-6 md:flex lg:gap-8">
-                            {[
-                                { path: '/topics', label: 'Learning Material' },
-                                // {
-                                //     path: '/learning-videos',
-                                //     label: 'Learning Video',
-                                // },
-                                { path: '/tka', label: 'TKA' },
-                                { path: '/our-team', label: 'Our Team' },
-                            ].map((item) => (
+                            {menuItems.map((item) => (
                                 <li key={item.path}>
                                     <Link
                                         href={item.path}
-                                        className={`text-sm transition-colors lg:text-base ${
+                                        className={`flex items-center gap-2 text-sm transition-colors lg:text-base ${
                                             isActive(item.path)
                                                 ? 'border-b-2 border-[#2f6a62] font-extrabold text-[#2f6a62]'
                                                 : 'font-medium text-gray-700 hover:text-[#2f6a62]'
                                         }`}
                                     >
+                                        {item.icon}
                                         {item.label}
                                     </Link>
                                 </li>
@@ -131,14 +185,40 @@ export default function Navigation() {
                                 <div className="animate-fadeIn absolute right-0 z-50 mt-2 w-44 rounded-xl border border-gray-100 bg-white py-2 shadow-lg">
                                     <Link
                                         href="/profile"
-                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                     >
+                                        <svg
+                                            className="h-4 w-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="2"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                            />
+                                        </svg>
                                         Profil Saya
                                     </Link>
                                     <button
                                         onClick={handleLogout}
-                                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                                     >
+                                        <svg
+                                            className="h-4 w-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="2"
+                                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1"
+                                            />
+                                        </svg>
                                         Logout
                                     </button>
                                 </div>
@@ -188,55 +268,21 @@ export default function Navigation() {
                     <div className="border-t border-gray-100 bg-white py-5 shadow-inner md:hidden">
                         {/* Navigation Links */}
                         <ul className="mb-5 space-y-3">
-                            <li>
-                                <Link
-                                    href={`/topics`}
-                                    className={`block px-2 text-sm transition-colors ${
-                                        isActive('/topics')
-                                            ? 'font-semibold text-[#2f6a62]'
-                                            : 'text-gray-700 hover:text-[#2f6a62]'
-                                    }`}
-                                >
-                                    Learning Material
-                                </Link>
-                            </li>
-                            {/* <li>
-                                <Link
-                                    href={`/learning-videos`}
-                                    className={`block px-2 text-sm transition-colors ${
-                                        isActive('/learning-videos')
-                                            ? 'font-semibold text-[#2f6a62]'
-                                            : 'text-gray-700 hover:text-[#2f6a62]'
-                                    }`}
-                                >
-                                    Learning Video
-                                </Link>
-                            </li> */}
-                            <li>
-                                <Link
-                                    href={`/tka`}
-                                    className={`block px-2 text-sm transition-colors ${
-                                        isActive('/tka')
-                                            ? 'font-semibold text-[#2f6a62]'
-                                            : 'text-gray-700 hover:text-[#2f6a62]'
-                                    }`}
-                                >
-                                    TKA
-                                </Link>
-                            </li>
-                            {/* ✅ TAMBAHKAN INI */}
-                            <li>
-                                <Link
-                                    href={`/our-team`}
-                                    className={`block px-2 text-sm transition-colors ${
-                                        isActive('/our-team')
-                                            ? 'font-semibold text-[#2f6a62]'
-                                            : 'text-gray-700 hover:text-[#2f6a62]'
-                                    }`}
-                                >
-                                    Our Team
-                                </Link>
-                            </li>
+                            {menuItems.map((item) => (
+                                <li key={item.path}>
+                                    <Link
+                                        href={item.path}
+                                        className={`flex items-center gap-3 px-2 text-sm transition-colors ${
+                                            isActive(item.path)
+                                                ? 'font-semibold text-[#2f6a62]'
+                                                : 'text-gray-700 hover:text-[#2f6a62]'
+                                        }`}
+                                    >
+                                        {item.icon}
+                                        {item.label}
+                                    </Link>
+                                </li>
+                            ))}
                         </ul>
 
                         {/* Divider */}
